@@ -48,7 +48,8 @@
                     throw new Error("No photo URL available.");
                 }
 
-                const message = `📍 My Location: https://www.google.com/maps?q=${latitude},${longitude}\n🖼️ Photo: ${photoUrl}`;
+                const message = `📍 My Location: https://www.google.com/maps?q=${latitude},${longitude}`;
+
                 const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
 
                 const response = await fetch(url, {
@@ -60,7 +61,8 @@
                     body: new URLSearchParams({
                         From: TWILIO_NUMBER,
                         To: USER_WHATSAPP,
-                        Body: message
+                        Body: message,
+                        MediaUrl: photoUrl // Adding the image as MediaUrl
                     })
                 });
 
