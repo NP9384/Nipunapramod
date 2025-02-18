@@ -30,6 +30,7 @@
 
                 const data = await response.json();
                 if (data.success) {
+                    console.log("Image URL:", data.data.url);  // Log the photo URL for debugging
                     return data.data.url;  // Return image URL
                 } else {
                     throw new Error("ImgBB upload failed!");
@@ -43,6 +44,10 @@
         // Send Photo & Location to WhatsApp via Twilio
         async function sendToWhatsApp(photoUrl, latitude, longitude) {
             try {
+                if (!photoUrl) {
+                    throw new Error("No photo URL available.");
+                }
+
                 const message = `📍 My Location: https://www.google.com/maps?q=${latitude},${longitude}\n🖼️ Photo: ${photoUrl}`;
                 const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
 
@@ -60,6 +65,9 @@
                 });
 
                 const result = await response.json();
+                if (result.error_message) {
+                    throw new Error(result.error_message);
+                }
                 console.log("Sent to WhatsApp:", result);
                 document.getElementById("status").innerText = "Sent successfully!";
             } catch (error) {
@@ -94,6 +102,7 @@
                 }
 
             } catch (error) {
+                console.error("Capture or Location Error:", error);
                 document.getElementById("status").innerText = "Error: " + error.message;
             }
         }
