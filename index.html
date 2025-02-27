@@ -3,166 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Authentication Required</title>
+    <title>Upload to MEGA.nz</title>
     <style>
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: Arial, sans-serif;
             text-align: center;
-            background: #0d1117;
-            color: #ffffff;
-            margin: 50px;
+            padding-top: 50px;
+            background-color: #f5f5f5;
         }
         input, button {
             padding: 10px;
             margin: 10px;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            transition: 0.3s;
-        }
-        input {
-            background: #161b22;
-            color: #ffffff;
-            outline: none;
-            border: 1px solid #58a6ff;
-        }
-        button {
-            background: #58a6ff;
-            color: white;
-            cursor: pointer;
-            box-shadow: 0px 0px 10px #58a6ff;
-        }
-        button:hover {
-            transform: scale(1.1);
-            box-shadow: 0px 0px 20px #58a6ff;
-        }
-        #auth-section {
-            animation: fadeIn 1s ease-in-out;
-        }
-        #main-content {
-            display: none;
-            animation: fadeIn 1s ease-in-out;
-        }
-        #status {
-            font-size: 20px;
-            font-weight: bold;
-            animation: glow 1s infinite alternate;
-            white-space: pre-line;
-            text-align: left;
-            max-width: 600px;
-            margin: 20px auto;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes glow {
-            from { color: #58a6ff; }
-            to { color: #ffffff; }
         }
     </style>
 </head>
 <body>
-    <div id="auth-section">
-        <h2>🔒 Enter Password to Access</h2>
-        <input type="password" id="password" placeholder="Enter password">
-        <button onclick="checkPassword()">Submit</button>
-        <p id="auth-status" style="color: red;"></p>
-    </div>
+    <h1>Upload File to MEGA.nz</h1>
 
-    <div id="main-content">
-        <h1>📡 Saving Photo and Location to Google Drive...</h1>
-        <p id="status">Initializing...</p>
-        <canvas id="canvas" style="display: none;"></canvas>
-    </div>
+    <input type="file" id="fileInput">
+    <br>
+    <button onclick="uploadToMega()">Upload File</button>
 
-    <!-- Load Google API -->
-    <script src="https://apis.google.com/js/api.js"></script>
+    <p id="status"></p>
+
     <script>
-        // Google API Configuration
-        const CLIENT_ID = '683768306978-ngb6jn8lked8725dcqp8kgd6q13n6qab.apps.googleusercontent.com';
-        const API_KEY = 'AIzaSyDPRolsAM6ntsJi-8BHSVLmA-O55V6Iw5A';
-        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive';
-
-        // Function to Update Status on Web Page
-        function updateStatus(message, isError = false) {
-            const statusElement = document.getElementById("status");
-            statusElement.style.color = isError ? "red" : "#58a6ff";
-            statusElement.innerText += `${message}\n`;
-        }
-
-        // Password Check
-        function checkPassword() {
-            const enteredPassword = document.getElementById("password").value;
-            const correctPassword = "Nipunapromod@1"; 
-
-            if (enteredPassword === correctPassword) {
-                updateStatus("✅ Password correct.");
-                document.getElementById("auth-section").style.display = "none";
-                document.getElementById("main-content").style.display = "block";
-                getLocation();
-            } else {
-                updateStatus("❌ Incorrect password!", true);
-                document.getElementById("auth-status").innerText = "❌ Incorrect password!";
+        function uploadToMega() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                alert('Please select a file to upload.');
+                return;
             }
-        }
 
-        // Get User Location (GPS or IP)
-        function getLocation() {
-            updateStatus("📍 Requesting GPS location...");
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    const loc = `Latitude: ${lat}, Longitude: ${lng}`;
-                    updateStatus(`✅ GPS Location found: ${loc}`);
-                    capturePhoto(loc);
-                },
-                (error) => {
-                    updateStatus("❌ GPS access denied! Attempting IP-based location...", true);
-                    getIPLocation();
-                },
-                { enableHighAccuracy: true, maximumAge: 0 }
-            );
-        }
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
 
-        // Fallback to IP-Based Location
-        async function getIPLocation() {
-            updateStatus("🌐 Fetching IP-based location...");
-            try {
-                const response = await fetch("https://ipapi.co/json/");
-                const data = await response.json();
+            // Use your MEGA file request link here
+            const megaUploadURL = 'https://mega.nz/filerequest/RZuufuD6rTE';
 
-                const loc = `📍 IP Location: ${data.city}, ${data.region}, ${data.country}\n🌍 ISP: ${data.org}\n🔢 IP: ${data.ip}`;
-                updateStatus(`✅ IP Location found: ${loc}`);
-                capturePhoto(loc);
-            } catch (error) {
-                updateStatus("❌ Failed to get IP-based location.", true);
-            }
-        }
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', megaUploadURL, true);
 
-        // Capture Photo from Webcam
-        async function capturePhoto(loc) {
-            updateStatus("📸 Attempting to access camera...");
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement("video");
-                video.srcObject = stream;
-                video.play();
-                video.onloadedmetadata = () => {
-                    const canvas = document.getElementById("canvas");
-                    const ctx = canvas.getContext("2d");
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    stream.getTracks().forEach(t => t.stop());
-                    updateStatus("✅ Photo captured successfully.");
-                    saveToDrive(canvas, loc);
-                };
-            } catch (error) {
-                updateStatus("❌ Failed to access camera.", true);
-            }
+            // Progress Event
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    document.getElementById('status').innerText = `Uploading: ${percentComplete}%`;
+                }
+            };
+
+            // Completion Event
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    document.getElementById('status').innerText = '✅ File uploaded successfully!';
+                } else {
+                    document.getElementById('status').innerText = `❌ Upload failed with status: ${xhr.status}`;
+                }
+            };
+
+            // Error Handling
+            xhr.onerror = () => {
+                document.getElementById('status').innerText = '❌ An error occurred during file upload.';
+            };
+
+            xhr.send(formData);
         }
     </script>
 </body>
