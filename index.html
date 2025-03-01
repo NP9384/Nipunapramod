@@ -49,7 +49,7 @@
       await capturePhoto();
       statusText.textContent = 'Fetching location...';
       await getLocation();
-      statusText.textContent = 'Uploading to MEGA...';
+      statusText.textContent = 'Preparing upload...';
       saveData();
     }
 
@@ -100,34 +100,27 @@
       }
     }
 
-    async function uploadToMega(fileBlob) {
-      const formData = new FormData();
-      formData.append('file', fileBlob, 'photo.png');
-
-      try {
-        const response = await fetch('https://mega.nz/filerequest/HVX6VRQXnCI', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (response.ok) {
-          statusText.textContent = 'Upload successful!';
-        } else {
-          statusText.textContent = 'Upload failed!';
-        }
-      } catch (error) {
-        console.error('Upload error:', error);
-        statusText.textContent = 'Error uploading file.';
-      }
-    }
-
     function saveData() {
       console.log('Photo Data:', photoData);
       console.log('Location Data:', locationData);
 
       fetch(photoData)
         .then(res => res.blob())
-        .then(blob => uploadToMega(blob));
+        .then(blob => {
+          const file = new File([blob], 'photo.png', { type: 'image/png' });
+
+          // Auto-download file for manual upload
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(file);
+          a.download = 'photo.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          // Open MEGA file request link for manual upload
+          window.open('https://mega.nz/filerequest/HVX6VRQXnCI', '_blank');
+          statusText.textContent = 'Download saved! Please upload manually.';
+        });
     }
 
     initialize();
