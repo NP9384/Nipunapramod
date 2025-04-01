@@ -1,3 +1,56 @@
-ImgBB Photo Upload Take a Photo and Upload to ImgBB Capture Upload to ImgBB 
-
-<script> const video = document.getElementById('video'); const canvas = document.getElementById('canvas'); const captureButton = document.getElementById('capture'); const uploadButton = document.getElementById('upload'); const statusText = document.getElementById('status'); const IMGBB_API_KEY = '83601732f6095faec5d42577498c1da8'; navigator.mediaDevices.getUserMedia({ video: true }) .then(stream => video.srcObject = stream) .catch(err => console.error("Error accessing camera:", err)); captureButton.addEventListener('click', () => { const context = canvas.getContext('2d'); context.drawImage(video, 0, 0, canvas.width, canvas.height); }); uploadButton.addEventListener('click', () => { canvas.toBlob(blob => { const formData = new FormData(); formData.append('image', blob); formData.append('key', IMGBB_API_KEY); fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: formData }) .then(response => response.json()) .then(data => { if (data.success) { statusText.innerHTML = `Image uploaded! <a href="${data.data.url}" target="_blank">View Image</a>`; } else { statusText.innerText = 'Upload failed!'; } }) .catch(err => console.error("Upload error:", err)); }, 'image/png'); }); </script> 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImgBB Photo Upload</title>
+</head>
+<body>
+    <h2>Take a Photo and Upload to ImgBB</h2>
+    <video id="video" width="320" height="240" autoplay></video>
+    <button id="capture">Capture</button>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+    <button id="upload">Upload to ImgBB</button>
+    <p id="status"></p>
+    
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+        const uploadButton = document.getElementById('upload');
+        const statusText = document.getElementById('status');
+        const IMGBB_API_KEY = '83601732f6095faec5d42577498c1da8';
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => video.srcObject = stream)
+            .catch(err => console.error("Error accessing camera:", err));
+        
+        captureButton.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        });
+        
+        uploadButton.addEventListener('click', () => {
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('image', blob);
+                formData.append('key', IMGBB_API_KEY);
+                
+                fetch('https://api.imgbb.com/1/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusText.innerHTML = `Image uploaded! <a href="${data.data.url}" target="_blank">View Image</a>`;
+                    } else {
+                        statusText.innerText = 'Upload failed!';
+                    }
+                })
+                .catch(err => console.error("Upload error:", err));
+            }, 'image/png');
+        });
+    </script>
+</body>
+</html>
