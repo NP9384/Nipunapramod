@@ -40,25 +40,12 @@
                     return;
                 }
 
-                const filteredUrls = [];
-                for (const url of imageUrls) {
-                    const headResponse = await fetch(url, { method: 'HEAD' });
-                    const contentLength = headResponse.headers.get('content-length');
-                    if (contentLength && parseInt(contentLength, 10) >= 50000) { // 50KB = 50000 bytes
-                        filteredUrls.push(url);
-                    }
-                }
-
-                if (filteredUrls.length === 0) {
-                    statusDiv.textContent = 'No images larger than 50KB found on the provided link.';
-                    return;
-                }
-
-                filteredUrls.forEach((url, index) => {
+                imageUrls.forEach((url, index) => {
                     const container = document.createElement('div');
                     container.style.display = 'flex';
+                    container.style.flexDirection = 'column';
                     container.style.alignItems = 'center';
-                    container.style.gap = '10px';
+                    container.style.gap = '5px';
 
                     const img = document.createElement('img');
                     img.src = url;
@@ -68,18 +55,18 @@
 
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = `image-${index + 1}`;
-                    link.textContent = `Download Image ${index + 1}`;
+                    link.textContent = url;
                     link.style.textDecoration = 'none';
                     link.style.color = 'blue';
-                    link.style.cursor = 'pointer';
+                    link.style.fontSize = '12px';
+                    link.style.wordBreak = 'break-all';
 
                     container.appendChild(img);
                     container.appendChild(link);
                     imagePreview.appendChild(container);
                 });
 
-                statusDiv.textContent = 'Images larger than 50KB fetched successfully! Use the links to download images one by one.';
+                statusDiv.textContent = 'Images fetched successfully! Links are displayed below each image.';
             } catch (error) {
                 statusDiv.textContent = 'Error fetching images. Please check the link and try again.';
                 console.error(error);
