@@ -3,65 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ImgBB Photo Upload</title>
+    <title>Bulk Image Downloader</title>
 </head>
 <body>
-    <h2>Automatically Capture and Upload Photo to ImgBB</h2>
-    <video id="video" width="320" height="240" autoplay></video>
-    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
-    <p id="status"></p>
-    
+    <h1>Bulk Image Downloader</h1>
+    <form id="imageForm">
+        <label for="websiteLink">Enter Website Link:</label>
+        <input type="url" id="websiteLink" name="websiteLink" required>
+        <button type="submit">Download Images</button>
+    </form>
+    <div id="status"></div>
     <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const statusText = document.getElementById('status');
-        const IMGBB_API_KEY = '83601732f6095faec5d42577498c1da8';
-        let stream;
+        document.getElementById('imageForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const websiteLink = document.getElementById('websiteLink').value;
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Fetching images...';
 
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(mediaStream => {
-                stream = mediaStream;
-                video.srcObject = stream;
-                video.addEventListener('loadeddata', captureAndUpload);
-            })
-            .catch(err => {
-                console.error("Error accessing camera:", err);
-                statusText.innerText = "Error accessing camera.";
-            });
+            try {
+                const response = await fetch(websiteLink);
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const imageElements = doc.querySelectorAll('img');
+                const imageUrls = Array.from(imageElements).map(img => img.src);
 
-        function captureAndUpload() {
-            const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-            video.style.display = 'none';
-
-            const blob = canvas.toDataURL('image/png').split(',')[1];
-            const formData = new URLSearchParams();
-            formData.append('image', blob);
-            formData.append('key', IMGBB_API_KEY);
-
-            statusText.innerText = "Uploading photo...";
-
-            fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    statusText.innerHTML = `Image uploaded! <a href="${data.data.url}" target="_blank">View Image</a>`;
-                } else {
-                    statusText.innerText = "Upload failed!";
+                if (imageUrls.length === 0) {
+                    statusDiv.textContent = 'No images found on the provided link.';
+                    return;
                 }
-            })
-            .catch(err => {
-                console.error("Upload error:", err);
-                statusText.innerText = "Error uploading photo.";
-            });
-        }
+
+                imageUrls.forEach((url, index) => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `image-${index + 1}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                });
+
+                statusDiv.textContent = 'Images downloaded successfully!';
+            } catch (error) {
+                statusDiv.textContent = 'Error fetching images. Please check the link and try again.';
+                console.error(error);
+            }
+        });
     </script>
 </body>
 </html>
