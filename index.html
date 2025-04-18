@@ -6,12 +6,35 @@
     <title>Image Links</title>
 </head>
 <body>
+    <input type="text" id="websiteInput" placeholder="Enter website URL" />
+    <button id="fetchImages">Fetch Images</button>
+    <ul id="imageLinks"></ul>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const imgTags = document.querySelectorAll("img");
-            imgTags.forEach(img => {
-                console.log(img.src);
-            });
+        document.getElementById("fetchImages").addEventListener("click", async () => {
+            const websiteUrl = document.getElementById("websiteInput").value;
+            if (!websiteUrl) {
+                alert("Please enter a valid URL.");
+                return;
+            }
+
+            try {
+                const response = await fetch(websiteUrl);
+                const htmlText = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, "text/html");
+                const imgTags = doc.querySelectorAll("img");
+                const imageLinksList = document.getElementById("imageLinks");
+                imageLinksList.innerHTML = ""; // Clear previous results
+
+                imgTags.forEach(img => {
+                    const li = document.createElement("li");
+                    li.textContent = img.src;
+                    imageLinksList.appendChild(li);
+                });
+            } catch (error) {
+                console.error("Error fetching images:", error);
+                alert("Failed to fetch images. Please check the URL and try again.");
+            }
         });
     </script>
 </body>
