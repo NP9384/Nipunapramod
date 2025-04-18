@@ -31,9 +31,9 @@
                 const doc = parser.parseFromString(html, 'text/html');
                 const imageElements = doc.querySelectorAll('img');
                 const imageUrls = Array.from(imageElements).map(img => {
-                    const src = img.getAttribute('src');
-                    return src.startsWith('http') ? src : new URL(src, websiteLink).href;
-                });
+                    let src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src');
+                    return src ? (src.startsWith('http') ? src : new URL(src, websiteLink).href) : null;
+                }).filter(Boolean);
 
                 if (imageUrls.length === 0) {
                     statusDiv.textContent = 'No images found on the provided link.';
