@@ -10,15 +10,18 @@
     <form id="imageForm">
         <label for="websiteLink">Enter Website Link:</label>
         <input type="url" id="websiteLink" name="websiteLink" required>
-        <button type="submit">Download Images</button>
+        <button type="submit">Fetch Images</button>
     </form>
     <div id="status"></div>
+    <div id="imagePreview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;"></div>
     <script>
         document.getElementById('imageForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const websiteLink = document.getElementById('websiteLink').value;
             const statusDiv = document.getElementById('status');
+            const imagePreview = document.getElementById('imagePreview');
             statusDiv.textContent = 'Fetching images...';
+            imagePreview.innerHTML = '';
 
             try {
                 const response = await fetch(websiteLink);
@@ -34,15 +37,25 @@
                 }
 
                 imageUrls.forEach((url, index) => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `image-${index + 1}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = `Image ${index + 1}`;
+                    img.style.width = '150px';
+                    img.style.height = 'auto';
+                    img.style.cursor = 'pointer';
+                    img.title = 'Click to download';
+                    img.addEventListener('click', () => {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `image-${index + 1}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    });
+                    imagePreview.appendChild(img);
                 });
 
-                statusDiv.textContent = 'Images downloaded successfully!';
+                statusDiv.textContent = 'Images fetched successfully! Click on an image to download.';
             } catch (error) {
                 statusDiv.textContent = 'Error fetching images. Please check the link and try again.';
                 console.error(error);
