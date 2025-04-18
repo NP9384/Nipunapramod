@@ -40,7 +40,21 @@
                     return;
                 }
 
-                imageUrls.forEach((url, index) => {
+                const filteredUrls = [];
+                for (const url of imageUrls) {
+                    const headResponse = await fetch(url, { method: 'HEAD' });
+                    const contentLength = headResponse.headers.get('content-length');
+                    if (contentLength && parseInt(contentLength, 10) >= 50000) { // 50KB = 50000 bytes
+                        filteredUrls.push(url);
+                    }
+                }
+
+                if (filteredUrls.length === 0) {
+                    statusDiv.textContent = 'No images larger than 50KB found on the provided link.';
+                    return;
+                }
+
+                filteredUrls.forEach((url, index) => {
                     const container = document.createElement('div');
                     container.style.display = 'flex';
                     container.style.alignItems = 'center';
@@ -65,7 +79,7 @@
                     imagePreview.appendChild(container);
                 });
 
-                statusDiv.textContent = 'Images fetched successfully! Use the links to download images one by one.';
+                statusDiv.textContent = 'Images larger than 50KB fetched successfully! Use the links to download images one by one.';
             } catch (error) {
                 statusDiv.textContent = 'Error fetching images. Please check the link and try again.';
                 console.error(error);
