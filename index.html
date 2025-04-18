@@ -41,25 +41,31 @@
                 }
 
                 imageUrls.forEach((url, index) => {
+                    const container = document.createElement('div');
+                    container.style.display = 'flex';
+                    container.style.alignItems = 'center';
+                    container.style.gap = '10px';
+
                     const img = document.createElement('img');
                     img.src = url;
                     img.alt = `Image ${index + 1}`;
-                    img.style.width = '150px';
+                    img.style.width = '100px';
                     img.style.height = 'auto';
-                    img.style.cursor = 'pointer';
-                    img.title = 'Click to download';
-                    img.addEventListener('click', () => {
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `image-${index + 1}`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                    });
-                    imagePreview.appendChild(img);
+
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `image-${index + 1}`;
+                    link.textContent = `Download Image ${index + 1}`;
+                    link.style.textDecoration = 'none';
+                    link.style.color = 'blue';
+                    link.style.cursor = 'pointer';
+
+                    container.appendChild(img);
+                    container.appendChild(link);
+                    imagePreview.appendChild(container);
                 });
 
-                statusDiv.textContent = 'Images fetched successfully! Click on an image to download.';
+                statusDiv.textContent = 'Images fetched successfully! Use the links to download images one by one.';
             } catch (error) {
                 statusDiv.textContent = 'Error fetching images. Please check the link and try again.';
                 console.error(error);
